@@ -1,0 +1,10 @@
+{
+  "name": "battle-dots",
+  "version": "1.0.0",
+  "author": "Alexandre Trotel",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
