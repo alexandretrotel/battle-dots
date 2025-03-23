@@ -1,15 +1,5 @@
-# battle-dots
+# Battle Dots ⚔️
 
-To install dependencies:
-
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.2.4. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+- **How it works**: Each player controls a dot that shoots small projectiles at the opponent.
+- **Tech**: React + PixiJS for rendering, WebSockets for multiplayer.
+- **Extra Features**: Power-ups like speed boosts, shields, and explosive shots.
