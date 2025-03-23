@@ -6,15 +6,5 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ],
-  "dependencies": {
-    "@hono/node-server": "^1.14.0",
-    "hono": "^4.7.5",
-    "socket.io": "^4.8.1",
-    "ws": "^8.18.1"
-  },
-  "devDependencies": {
-    "@types/express": "^5.0.1",
-    "@types/ws": "^8.18.0"
-  }
+  ]
 }
