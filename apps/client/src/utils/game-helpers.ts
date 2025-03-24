@@ -60,11 +60,13 @@ export const spawnBots = (
   player: Entity,
   canvasWidth: number,
   canvasHeight: number,
+  nextBotIdRef: React.MutableRefObject<number>,
 ) => {
   if (Object.keys(otherPlayers).length > 0) return;
 
   for (let i = 0; i < MAX_BOTS; i++) {
-    bots[i] = spawnBot(player, BOT_NAMES, canvasWidth, canvasHeight);
+    const botId = nextBotIdRef.current++;
+    bots[botId] = spawnBot(player, BOT_NAMES, canvasWidth, canvasHeight);
   }
 };
 

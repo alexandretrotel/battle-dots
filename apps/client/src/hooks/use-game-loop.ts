@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { BOT_NAMES, RADIUS } from "../data/settings";
+import { RADIUS } from "../data/settings";
 import useSocket from "./use-socket";
 import { Bots, Bullets, Entity, Particles, Players } from "../interfaces/game";
-import { spawnBot, spawnBots } from "../utils/game-helpers";
+import { spawnBots } from "../utils/game-helpers";
 import { useMusic } from "./use-music";
 import { playDeadSound, playShootSound } from "../utils/sounds";
 import { useScoreStore } from "../stores/score.store";
@@ -10,10 +10,10 @@ import { useScoreStore } from "../stores/score.store";
 const useGameLoop = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [playerName, setPlayerName] = useState<string | null>(null);
+  const [isDead, setIsDead] = useState(false);
   const { score, setScore } = useScoreStore();
-  const socket = useSocket(playerName); // Socket persists across respawns
+  const socket = useSocket(playerName);
 
-  // Game state variables (moved outside useEffect to persist)
   const playerRef = useRef<Entity | null>(null);
   const botsRef = useRef<Bots>({});
   const bulletsRef = useRef<Bullets>([]);
@@ -22,12 +22,12 @@ const useGameLoop = () => {
   const keysRef = useRef<{ [key: string]: boolean }>({});
   const scoreRef = useRef(score);
   const invulnerabilityRef = useRef<boolean>(false);
-  const isDeadRef = useRef<boolean>(false);
+  const nextBotIdRef = useRef(0);
 
-  useMusic(isDeadRef.current, playerName);
+  useMusic(isDead, playerName);
 
   useEffect(() => {
-    if (!socket || !playerName) return;
+    if (!socket || !playerName || isDead) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -61,8 +61,8 @@ const useGameLoop = () => {
     };
     drawNeonBorder();
 
-    // Initialize or reset player
-    const initPlayer = () => {
+    const resetGameState = () => {
+      if (!canvas || !playerRef.current) return;
       playerRef.current = {
         x: canvas.width / 2,
         y: canvas.height / 2,
@@ -70,50 +70,28 @@ const useGameLoop = () => {
         name: playerName,
         radius: RADIUS,
       };
-
-      // Reset game state
-      if (isDeadRef.current) {
-        setScore(scoreRef.current); // Update score
-      } else {
-        setScore(0); // Reset score
-      }
-
-      // Set invulnerability for 2s
-      invulnerabilityRef.current = true; // Set invulnerability
-      setTimeout(() => {
-        invulnerabilityRef.current = false; // Remove invulnerability after 2s
-      }, 2000);
-
-      bulletsRef.current = []; // Clear bullets on respawn
-      botsRef.current = {}; // Clear bots on respawn
+      bulletsRef.current = [];
+      botsRef.current = {};
       spawnBots(
         botsRef.current,
         otherPlayersRef.current,
         playerRef.current,
         canvas.width,
         canvas.height,
+        nextBotIdRef,
       );
+      invulnerabilityRef.current = true;
+      setTimeout(() => {
+        invulnerabilityRef.current = false;
+      }, 2000);
     };
 
-    initPlayer();
-
-    // Spawn initial bots if no other players
-    if (!playerRef.current) return;
-
-    if (Object.keys(otherPlayersRef.current).length === 0) {
-      spawnBots(
-        botsRef.current,
-        otherPlayersRef.current,
-        playerRef.current,
-        canvas.width,
-        canvas.height,
-      );
-    }
+    resetGameState();
 
     // Keyboard handlers
     const handleKeyDown = (e: KeyboardEvent) => {
       keysRef.current[e.key.toLowerCase()] = true;
-      if (e.key === " " && !isDeadRef.current) {
+      if (e.key === " " && !isDead) {
         let angle: number;
         const targets = [
           ...Object.values(otherPlayersRef.current),
@@ -197,6 +175,7 @@ const useGameLoop = () => {
           playerRef.current!,
           canvas.width,
           canvas.height,
+          nextBotIdRef,
         );
       }
     });
@@ -298,7 +277,7 @@ const useGameLoop = () => {
           const dx = player.x - bullet.x;
           const dy = player.y - bullet.y;
           if (Math.hypot(dx, dy) < bullet.radius + player.radius) {
-            isDeadRef.current = true;
+            setIsDead(true);
             playShootSound();
             playDeadSound();
             bulletsRef.current = [];
@@ -316,7 +295,14 @@ const useGameLoop = () => {
               delete botsRef.current[botId];
               setScore(scoreRef.current + 50);
               bulletsRef.current.splice(i, 1);
-              spawnBot(player, BOT_NAMES, canvas.width, canvas.height);
+              spawnBots(
+                botsRef.current,
+                otherPlayersRef.current,
+                playerRef.current!,
+                canvas.width,
+                canvas.height,
+                nextBotIdRef,
+              );
               break;
             }
           }
@@ -350,7 +336,7 @@ const useGameLoop = () => {
       }
 
       // Draw player
-      if (!isDeadRef.current) {
+      if (!isDead) {
         ctx.beginPath();
         ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
         ctx.fillStyle = player.color;
@@ -400,38 +386,35 @@ const useGameLoop = () => {
       ctx.fillText(`Score: ${scoreRef.current}`, 20, 40);
       ctx.shadowBlur = 0;
 
-      animationFrameId = requestAnimationFrame(animate);
+      if (!isDead) {
+        animationFrameId = requestAnimationFrame(animate);
+      }
     };
     animationFrameId = requestAnimationFrame(animate);
 
-    // Cleanup (only on unmount, not on death)
     return () => {
       window.removeEventListener("resize", resizeCanvas);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
       cancelAnimationFrame(animationFrameId);
       cancelAnimationFrame(neonBorderAnimationId);
-      socket.disconnect(); // Disconnect only when component unmounts
+      socket.disconnect();
     };
-  }, [playerName, setScore, socket]);
+  }, [playerName, setScore, socket, isDead]);
 
   const handleStart = (name: string) => {
     setPlayerName(name);
-    isDeadRef.current = false;
+    setIsDead(false);
   };
 
   const handleRespawn = () => {
-    isDeadRef.current = false;
-    if (canvasRef.current && playerRef.current) {
-      playerRef.current.x = canvasRef.current.width / 2;
-      playerRef.current.y = canvasRef.current.height / 2;
-    }
+    setIsDead(false);
   };
 
   return {
     playerName,
     setPlayerName,
-    isDead: isDeadRef.current,
+    isDead,
     canvasRef,
     handleStart,
     handleRespawn,
