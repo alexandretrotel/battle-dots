@@ -41,28 +41,10 @@ const useGameLoop = () => {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    // Neon border animation
-    let neonBorderAnimationId: number;
-    let fade: number = 1;
-    const drawNeonBorder = () => {
-      const width = canvas.width;
-      const height = canvas.height;
-      ctx.clearRect(0, 0, width, height);
-      ctx.lineWidth = 10;
-      ctx.strokeStyle = `rgba(0, 255, 255, ${fade})`;
-      ctx.shadowColor = `rgba(0, 255, 255, ${fade})`;
-      ctx.shadowBlur = 15;
-      ctx.beginPath();
-      ctx.rect(5, 5, width - 10, height - 10);
-      ctx.stroke();
-      fade -= 0.01;
-      if (fade < 0) fade = 1;
-      neonBorderAnimationId = requestAnimationFrame(drawNeonBorder);
-    };
-    drawNeonBorder();
-
+    // Reset game state
     const resetGameState = () => {
       if (!canvas || !playerRef.current) return;
+
       playerRef.current = {
         x: canvas.width / 2,
         y: canvas.height / 2,
@@ -183,12 +165,14 @@ const useGameLoop = () => {
     let lastTime = performance.now();
     let lastBotShoot = performance.now();
     let animationFrameId: number;
+    let fade = 1; // Initialize fade for neon border
 
     const animate = (time: number) => {
       const dt = time - lastTime;
       const delta = dt / 16.67;
       lastTime = time;
 
+      // Clear canvas once per frame
       ctx.fillStyle = "#1e1e2f";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -386,6 +370,18 @@ const useGameLoop = () => {
       ctx.fillText(`Score: ${scoreRef.current}`, 20, 40);
       ctx.shadowBlur = 0;
 
+      // Draw neon border (after all game elements)
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = `rgba(0, 255, 255, ${fade})`;
+      ctx.shadowColor = `rgba(0, 255, 255, ${fade})`;
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.rect(5, 5, canvas.width - 10, canvas.height - 10);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      fade -= 0.01;
+      if (fade < 0) fade = 1;
+
       if (!isDead) {
         animationFrameId = requestAnimationFrame(animate);
       }
@@ -397,7 +393,6 @@ const useGameLoop = () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
       cancelAnimationFrame(animationFrameId);
-      cancelAnimationFrame(neonBorderAnimationId);
       socket.disconnect();
     };
   }, [playerName, setScore, socket, isDead]);
