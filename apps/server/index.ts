@@ -9,16 +9,24 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
 
 io.on("connection", (socket) => {
   console.log("Player connected:", socket.id);
 
-  socket.on("move", (data: { x: number; y: number }) => {
+  socket.on("move", (data: { x: number; y: number; name: string }) => {
+    console.log("Player moved:", socket.id, data);
     socket.broadcast.emit("move", { id: socket.id, ...data });
   });
 
   socket.on("shoot", (data: { x: number; y: number; angle: number }) => {
+    console.log("Player shot:", socket.id, data);
     io.emit("shoot", { id: socket.id, ...data });
   });
 
