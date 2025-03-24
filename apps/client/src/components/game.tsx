@@ -16,8 +16,8 @@ const Game: React.FC = () => {
   }
 
   return (
-    <div className="relative h-screen w-screen">
-      <canvas ref={canvasRef} className="h-full w-full" />
+    <div className="h-screen w-screen">
+      <canvas ref={canvasRef} className="block h-full w-full" />
     </div>
   );
 };
