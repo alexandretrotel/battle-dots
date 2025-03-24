@@ -18,3 +18,5 @@ export const FPS = {
   120: 8.33,
   240: 4.17,
 };
+
+export const MAX_PARTICLES = 1000;

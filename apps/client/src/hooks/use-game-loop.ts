@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { FPS, RADIUS } from "../data/settings";
+import { FPS, MAX_PARTICLES, RADIUS } from "../data/settings";
 import useSocket from "./use-socket";
 import { Bots, Bullets, Entity, Particles, Players } from "../interfaces/game";
 import { spawnBots } from "../utils/game-helpers";
@@ -176,15 +176,24 @@ const useGameLoop = () => {
     let lastTime = performance.now();
     let lastBotShoot = performance.now();
     let animationFrameId: number;
-    let fade = 1; // Initialize fade for neon border
 
     const animate = (time: number) => {
       const dt = time - lastTime;
       const delta = dt / FPS[60];
       lastTime = time;
 
-      // Clear canvas once per frame
-      ctx.fillStyle = "#1e1e2f";
+      // Clear canvas and draw background
+      const gradient = ctx.createRadialGradient(
+        canvas.width / 2,
+        canvas.height / 2,
+        0,
+        canvas.width / 2,
+        canvas.height / 2,
+        canvas.width,
+      );
+      gradient.addColorStop(0, "#1e1e2f");
+      gradient.addColorStop(1, "#0f0a24");
+      ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Player movement
@@ -253,21 +262,21 @@ const useGameLoop = () => {
         bullet.x += Math.cos(bullet.angle) * 10 * delta;
         bullet.y += Math.sin(bullet.angle) * 10 * delta;
 
-        if (Math.random() < 0.5) {
+        if (Math.random() < 0.7) {
           particlesRef.current.push({
             x: bullet.x,
             y: bullet.y,
-            vx: (Math.random() - 0.5) * 2,
-            vy: (Math.random() - 0.5) * 2,
-            life: 20,
+            vx: (Math.random() - 0.5) * 3,
+            vy: (Math.random() - 0.5) * 3,
+            life: 25,
           });
         }
 
         ctx.beginPath();
         ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
-        ctx.fillStyle = "#ff4444";
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = "#ff4444";
+        ctx.fillStyle = "#ff00ff"; // Neon magenta
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "#ff00ff";
         ctx.fill();
         ctx.shadowBlur = 0;
         ctx.closePath();
@@ -294,6 +303,7 @@ const useGameLoop = () => {
               playShootSound();
               delete botsRef.current[botId];
               setScore(scoreRef.current + 50);
+              scoreRef.current += 50;
               bulletsRef.current.splice(i, 1);
               spawnBots(
                 botsRef.current,
@@ -319,7 +329,11 @@ const useGameLoop = () => {
       }
 
       // Update and draw particles
-      for (let i = particlesRef.current.length - 1; i >= 0; i--) {
+      for (
+        let i = particlesRef.current.length - 1;
+        i >= 0 && particlesRef.current.length < MAX_PARTICLES;
+        i--
+      ) {
         const p = particlesRef.current[i];
         p.x += p.vx;
         p.y += p.vy;
@@ -330,7 +344,7 @@ const useGameLoop = () => {
         }
         ctx.beginPath();
         ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        ctx.fillStyle = `hsla(${time % 360}, 100%, 50%, ${p.life / 15})`;
         ctx.fill();
         ctx.closePath();
       }
@@ -340,15 +354,18 @@ const useGameLoop = () => {
         ctx.beginPath();
         ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
         ctx.fillStyle = player.color;
-        ctx.shadowBlur = invulnerabilityRef.current ? 30 : 20;
+        ctx.shadowBlur = invulnerabilityRef.current ? 40 : 25;
         ctx.shadowColor = "#ff00ff";
         ctx.fill();
         ctx.shadowBlur = 0;
         ctx.closePath();
-        ctx.font = "18px 'Courier New'";
+        ctx.font = "20px 'Orbitron'";
         ctx.fillStyle = "#fff";
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = "#ff00ff";
         ctx.textAlign = "center";
-        ctx.fillText(player.name, player.x, player.y - 25);
+        ctx.fillText(player.name, player.x, player.y - 30);
+        ctx.shadowBlur = 0;
       }
 
       // Draw other players
@@ -378,25 +395,24 @@ const useGameLoop = () => {
       });
 
       // Draw score
-      ctx.font = "28px 'Courier New'";
-      ctx.fillStyle = "#fff";
+      ctx.font = "32px 'Orbitron'";
+      ctx.fillStyle = "#00ffff";
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = "#00ffff";
       ctx.textAlign = "left";
-      ctx.shadowBlur = 5;
-      ctx.shadowColor = "#000";
       ctx.fillText(`Score: ${scoreRef.current}`, 20, 40);
       ctx.shadowBlur = 0;
 
-      // Draw neon border (after all game elements)
-      ctx.lineWidth = 10;
-      ctx.strokeStyle = `rgba(0, 255, 255, ${fade})`;
-      ctx.shadowColor = `rgba(0, 255, 255, ${fade})`;
-      ctx.shadowBlur = 15;
+      // Draw neon border
+      const glow = Math.sin(time / 500) * 0.5 + 0.5;
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = `rgba(0, 255, 255, ${glow})`;
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = `rgba(0, 255, 255, ${glow})`;
       ctx.beginPath();
-      ctx.rect(5, 5, canvas.width - 10, canvas.height - 10);
+      ctx.rect(4, 4, canvas.width - 8, canvas.height - 8);
       ctx.stroke();
       ctx.shadowBlur = 0;
-      fade -= 0.01;
-      if (fade < 0) fade = 1;
 
       if (!isDead) {
         animationFrameId = requestAnimationFrame(animate);
