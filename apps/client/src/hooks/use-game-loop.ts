@@ -51,6 +51,9 @@ const useGameLoop = () => {
     const resetGameState = () => {
       if (!canvas) return;
 
+      setScore(0);
+      scoreRef.current = 0;
+
       playerRef.current = {
         ...playerRef.current,
         x: canvas.width / 2,
@@ -60,6 +63,11 @@ const useGameLoop = () => {
       bulletsRef.current = [];
       botsRef.current = {};
       keysRef.current = {};
+      invulnerabilityRef.current = true;
+      setTimeout(() => {
+        invulnerabilityRef.current = false;
+      }, 2000);
+
       spawnBots(
         botsRef.current,
         otherPlayersRef.current,
@@ -68,10 +76,6 @@ const useGameLoop = () => {
         canvas.height,
         nextBotIdRef,
       );
-      invulnerabilityRef.current = true;
-      setTimeout(() => {
-        invulnerabilityRef.current = false;
-      }, 2000);
     };
 
     resetGameState();
