@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useScoreStore } from "../stores/score.store";
 
 interface NameScreenProps {
   onStart: (name: string) => void;
@@ -7,6 +8,8 @@ interface NameScreenProps {
 const NameScreen: React.FC<NameScreenProps> = ({ onStart }) => {
   const [name, setName] = useState("");
   const [glowIntensity, setGlowIntensity] = useState(0);
+
+  const { bestScore } = useScoreStore();
 
   useEffect(() => {
     let direction = 1;
@@ -68,6 +71,10 @@ const NameScreen: React.FC<NameScreenProps> = ({ onStart }) => {
             Enter Battle
           </button>
         </div>
+
+        <p className="mt-6 font-mono text-sm text-white">
+          Best Score: {bestScore}
+        </p>
       </form>
     </div>
   );
