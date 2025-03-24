@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { RADIUS } from "../data/settings";
+import { FPS, RADIUS } from "../data/settings";
 import useSocket from "./use-socket";
 import { Bots, Bullets, Entity, Particles, Players } from "../interfaces/game";
 import { spawnBots } from "../utils/game-helpers";
@@ -169,14 +169,20 @@ const useGameLoop = () => {
 
     const animate = (time: number) => {
       const dt = time - lastTime;
-      const delta = dt / 16.67;
+      const delta = dt / FPS[240];
       lastTime = time;
 
       // Clear canvas once per frame
       ctx.fillStyle = "#1e1e2f";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      const player = playerRef.current!;
+      // Guard against null player
+      const player = playerRef.current;
+      if (!player) {
+        animationFrameId = requestAnimationFrame(animate);
+        return; // Skip this frame if player isn’t initialized
+      }
+
       // Player movement
       if (keysRef.current["z"] || keysRef.current["arrowup"])
         player.y -= 5 * delta;
