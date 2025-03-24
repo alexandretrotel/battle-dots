@@ -5,7 +5,7 @@ import { Server } from "socket.io";
 const app = express();
 const server = createServer(app);
 
-app.get("/", (req, res) => {
+app.get("/", (_, res) => {
   res.send("Hello World!");
 });
 
