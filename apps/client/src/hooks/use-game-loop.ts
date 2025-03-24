@@ -59,6 +59,7 @@ const useGameLoop = () => {
       };
       bulletsRef.current = [];
       botsRef.current = {};
+      keysRef.current = {};
       spawnBots(
         botsRef.current,
         otherPlayersRef.current,
@@ -128,6 +129,11 @@ const useGameLoop = () => {
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
 
+    // Clear keys on blur
+    window.addEventListener("blur", () => {
+      keysRef.current = {};
+    });
+
     // Socket listeners
     socket.on(
       "move",
@@ -181,22 +187,21 @@ const useGameLoop = () => {
       ctx.fillStyle = "#1e1e2f";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Guard against null player
-      const player = playerRef.current;
-      if (!player) {
-        animationFrameId = requestAnimationFrame(animate);
-        return; // Skip this frame if player isn’t initialized
-      }
-
       // Player movement
-      if (keysRef.current["z"] || keysRef.current["arrowup"])
-        player.y -= 5 * delta;
-      if (keysRef.current["s"] || keysRef.current["arrowdown"])
-        player.y += 5 * delta;
-      if (keysRef.current["q"] || keysRef.current["arrowleft"])
-        player.x -= 5 * delta;
-      if (keysRef.current["d"] || keysRef.current["arrowright"])
-        player.x += 5 * delta;
+      const player = playerRef.current;
+      const speed = 8; // Pixels per second
+      if (keysRef.current["z"] || keysRef.current["arrowup"]) {
+        player.y -= speed * delta;
+      }
+      if (keysRef.current["s"] || keysRef.current["arrowdown"]) {
+        player.y += speed * delta;
+      }
+      if (keysRef.current["q"] || keysRef.current["arrowleft"]) {
+        player.x -= speed * delta;
+      }
+      if (keysRef.current["d"] || keysRef.current["arrowright"]) {
+        player.x += speed * delta;
+      }
       player.x = Math.max(
         player.radius,
         Math.min(canvas.width - player.radius, player.x),
