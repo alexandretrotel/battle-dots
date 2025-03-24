@@ -65,6 +65,8 @@ export const spawnBots = (
   if (Object.keys(otherPlayers).length > 0) return;
 
   for (let i = 0; i < MAX_BOTS; i++) {
+    if (Object.keys(bots).length >= MAX_BOTS) return;
+
     const botId = nextBotIdRef.current++;
     bots[botId] = spawnBot(player, BOT_NAMES, canvasWidth, canvasHeight);
   }

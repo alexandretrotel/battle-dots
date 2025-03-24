@@ -14,7 +14,13 @@ const useGameLoop = () => {
   const { score, setScore } = useScoreStore();
   const socket = useSocket(playerName);
 
-  const playerRef = useRef<Entity | null>(null);
+  const playerRef = useRef<Entity>({
+    x: 0,
+    y: 0,
+    color: "#ff00ff",
+    name: "",
+    radius: RADIUS,
+  });
   const botsRef = useRef<Bots>({});
   const bulletsRef = useRef<Bullets>([]);
   const particlesRef = useRef<Particles>([]);
@@ -43,14 +49,13 @@ const useGameLoop = () => {
 
     // Reset game state
     const resetGameState = () => {
-      if (!canvas || !playerRef.current) return;
+      if (!canvas) return;
 
       playerRef.current = {
+        ...playerRef.current,
         x: canvas.width / 2,
         y: canvas.height / 2,
-        color: "#ff00ff",
         name: playerName,
-        radius: RADIUS,
       };
       bulletsRef.current = [];
       botsRef.current = {};
@@ -169,7 +174,7 @@ const useGameLoop = () => {
 
     const animate = (time: number) => {
       const dt = time - lastTime;
-      const delta = dt / FPS[240];
+      const delta = dt / FPS[60];
       lastTime = time;
 
       // Clear canvas once per frame
